@@ -1,0 +1,89 @@
+################################################################################
+# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+################################################################################
+
+################################################################################
+# LOAD THE PACKAGES AND SET THE PARAMETERS
+################################################################################
+
+# LOAD THE PACKAGES
+library(data.table) ; library(dplyr)
+library(survival) ; library(Epi)
+library(dlnm) ; library(splines)
+library(mice)
+library(ggplot2); library(patchwork) ; library(scales)
+
+# DIRECTORIES
+maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/"
+#maindir <- "C:/Users/anton/Desktop/data/processed/"
+pmdir <- "V:/VolumeQ/AGteam/Biobank/data/original/envdata/"
+#pmdir <- "C:/Users/anton/Desktop/data/"
+fundir <- "V:/VolumeQ/AGteam/Biobank/data/scripts/functions/"
+
+# SELECT MORTALITY OUTCOMES
+outseq <- c("all","nonacc","cvd","resp","lung")
+outlab <- c("All causes","Non-accidental","Cardiovascular","Respiratory",
+  "Lung cancer")
+icdcode <- list(LETTERS,LETTERS[seq(which(LETTERS=="R"))],"I","J","C34")
+icdlen <- rep(c(1,3),c(4,1))
+
+# RANGE INCRESE FOR HR COMPUTATION
+pminc <- 10
+
+# LIST OF CROSS-BASIS PARAMETRISATIONS FOR LAGGED EFFECTS
+# SINGLE STRATUM (MOVING AVERAGE) AND SPLINES WITH 4 DF (DLM)
+argvar <- list(fun="lin") 
+arglaglist <- list(list("strata", df=1), list(fun="ns", df=4, int=T),
+  list(fun="strata", breaks=c(1,3,5), int=T))
+
+# LISTS FOR CONFOUNDER MODELS
+conf1 <- "strata(asscentre, sex, birthmonth)"
+conf2 <- c(conf1, "tdi")
+conf3 <- c(conf1, "ethnic", "educ", "income", "employ")
+conf4 <- union(conf2,conf3)
+conf5 <- c(conf4, "smkstatus", "smkpackyear", "alcoholintake", "wthratio",
+  "ipaq", "livealone", "health", "illness")
+conf6 <- c(conf5, "urbrur", "greenspace")
+conflist <- lapply(paste0("conf",1:6), get)
+
+# CREATE THE COMBINATIONS FOR THE MODELS (OUTCOME, CONFOUNDERS, LAG, )
+modcomb <- expand.grid(indconf=1:6, lag=c(0,1,4,7),indarglag=1) 
+modcomb <- rbind(modcomb, c(indconf=6, lag=7, indarglag=2),
+  c(indconf=6, lag=7, indarglag=3))
+modcomb$model <- paste0("mod",seq(nrow(modcomb)))
+modcomb <- cbind(indout=rep(seq(outseq), each=nrow(modcomb)), 
+  modcomb[rep(seq(nrow(modcomb)), length(outseq)),])
+rownames(modcomb) <- NULL
+
+# LIMIT THE COMBINATIONS
+#modcomb <- subset(modcomb, indconf%in%6 & lag%in%c(0,7))
+
+# LISTS OF VARIABLES FOR DESCRIPTIVE STATS
+dvarlin <- c("agebase","wthratio","smkpackyear","tdi","greenspace")
+dvarcat <- c("sex","ethnic","employ","educ","income","ipaq",
+  "alcoholintake","smkstatus","livealone","health","illness","urbrur")
+
+# PERCENTILES USED FOR RANGE OF CONTINUOUS VARIABLES
+perlin <- c(5,95)/100
+
+# LOAD THE FUNCTION FOR RUBIN'S RULE
+source(paste0(fundir, "frubin.R"))
+
+# NAMES FOR EXPOSURE MODELS 
+explab <- c("ML time-varying", "ML 2010", "LUR 2010")
+
+# FUNCTION TO FORMAT ESTIMATES
+funformat <- function(x, digits=1, big.mark="") 
+  formatC(x, digits=digits, format="f", big.mark=big.mark)
+
+# FUNCTION TO FORMAT ESTIMATES WITH RANGES
+frange <- function(est, digits=3, big.mark="") {
+  paste0(funformat(est[1], digits=digits, big.mark=big.mark), " (",
+    funformat(est[2], digits=digits, big.mark=big.mark), " to ",
+    funformat(est[3], digits=digits, big.mark=big.mark), ")")
+}
+
+# FUNCTION TO EXTRACT DISTRIBUTIONAL STATS
+fdstat <- function(x, per=perlin, digits=2, big.mark="") 
+  c(mean(x, na.rm=T),quantile(x, per, na.rm=T)) |> 
+  frange(digits=digits, big.mark=big.mark)
