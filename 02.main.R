@@ -32,21 +32,35 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
   fmod <- paste("Surv(dstartfu,dexit,event) ~ ", 
     paste(conflist[[indconf]], collapse="+"), "+cbpm25") |> as.formula()
   
-  # MERGE WITH IMPUTED BASELINE VARS
-  data <- subset(fulldata, select=-c(sex,asscentre)) |> 
-    merge(bdbasevarmi[[1]], by="eid") |> 
-    setkey(eid, year)
+  # RUN THE LOOP ACROSS IMPUTTED DATA
+  est <- lapply(seq(bdbasevarmi), function(j) {
+    
+    # PRINT
+    cat(j, "")
+    
+    # MERGE THE BASELINE VARS (EXCLUDE COMMON VARIABLES AND PRESERVE THE ORDER)
+    data <- subset(fulldata, select=-c(sex,asscentre)) |> 
+      merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
+    
+    # FIT THE MODEL
+    mod <- coxph(fmod, data=data, ties="efron")
+    
+    # EXTRACT COEF/VCOV
+    ind <- grep("cbpm25", names(coef(mod)))
+    coef <- coef(mod)[ind]
+    vcov <- vcov(mod)[ind,ind,drop=F]
+    
+    # RETURN
+    list(coef=coef, vcov=vcov)
+  })
   
-  # RUN THE COX MODEL
-  mod <- coxph(fmod, data=data, ties="efron")
-  
-  # EXTRACT COEF/VCOV
-  ind <- grep("cbpm25", names(coef(mod)))
-  coef <- coef(mod)[ind]
-  vcov <- vcov(mod)[ind,ind,drop=F]
+  # COMBINE THE ESTIMATES USING RUBIN'S RULE
+  coef <- lapply(est, "[[", "coef")
+  vcov <- lapply(est, "[[", "vcov")
+  poolpar <- frubin(coef, vcov)
   
   # RETURN
-  list(cases=sum(data$event), nevent=mod$nevent, coef=coef, vcov=vcov)
+  list(nevent=sum(fulldata$event), coef=poolpar$coef, vcov=poolpar$vcov)
 })
 
 # SAVE

@@ -12,6 +12,7 @@ library(survival) ; library(Epi)
 library(dlnm) ; library(splines)
 library(mice)
 library(ggplot2); library(patchwork) ; library(scales)
+#library(foreach) ; library(doParallel)
 
 # DIRECTORIES
 maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/"
@@ -19,6 +20,7 @@ maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/"
 pmdir <- "V:/VolumeQ/AGteam/Biobank/data/original/envdata/"
 #pmdir <- "C:/Users/anton/Desktop/data/"
 fundir <- "V:/VolumeQ/AGteam/Biobank/data/scripts/functions/"
+#fundir <- "C:/Users/anton/Desktop/data/scripts/functions/"
 
 # SELECT MORTALITY OUTCOMES
 outseq <- c("all","nonacc","cvd","resp","lung")
@@ -29,6 +31,10 @@ icdlen <- rep(c(1,3),c(4,1))
 
 # RANGE INCRESE FOR HR COMPUTATION
 pminc <- 10
+
+# LAG WINDOWS
+lagcomb <- c(0,1,4,7)
+laglab <- paste0(rep(c("","0-"),c(1,3)), lagcomb)
 
 # LIST OF CROSS-BASIS PARAMETRISATIONS FOR LAGGED EFFECTS
 # SINGLE STRATUM (MOVING AVERAGE) AND SPLINES WITH 4 DF (DLM)
@@ -47,7 +53,7 @@ conf6 <- c(conf5, "urbrur", "greenspace")
 conflist <- lapply(paste0("conf",1:6), get)
 
 # CREATE THE COMBINATIONS FOR THE MODELS (OUTCOME, CONFOUNDERS, LAG, )
-modcomb <- expand.grid(indconf=1:6, lag=c(0,1,4,7),indarglag=1) 
+modcomb <- expand.grid(indconf=1:6, lag=lagcomb,indarglag=1) 
 modcomb <- rbind(modcomb, c(indconf=6, lag=7, indarglag=2),
   c(indconf=6, lag=7, indarglag=3))
 modcomb$model <- paste0("mod",seq(nrow(modcomb)))
@@ -66,24 +72,32 @@ dvarcat <- c("sex","ethnic","employ","educ","income","ipaq",
 # PERCENTILES USED FOR RANGE OF CONTINUOUS VARIABLES
 perlin <- c(5,95)/100
 
+# SET PARALLELIZATION 
+ncores <- detectCores()
+pack <- c("dlnm", "data.table", "survival")
+
 # LOAD THE FUNCTION FOR RUBIN'S RULE
 source(paste0(fundir, "frubin.R"))
 
 # NAMES FOR EXPOSURE MODELS 
 explab <- c("ML time-varying", "ML 2010", "LUR 2010")
 
+# FUNCTION TO COMPUTE EXPONENTIATED POINT ESTIMATES AND 95%CI
+fci <- function(coef, vcov, mult=10) exp(c(coef, coef - qnorm(0.975)*sqrt(vcov), 
+  coef + qnorm(0.975)*sqrt(vcov))*mult)
+
 # FUNCTION TO FORMAT ESTIMATES
 funformat <- function(x, digits=1, big.mark="") 
   formatC(x, digits=digits, format="f", big.mark=big.mark)
 
 # FUNCTION TO FORMAT ESTIMATES WITH RANGES
-frange <- function(est, digits=3, big.mark="") {
+frange <- function(est, digits=2, big.mark="", sep="-") {
   paste0(funformat(est[1], digits=digits, big.mark=big.mark), " (",
-    funformat(est[2], digits=digits, big.mark=big.mark), " to ",
+    funformat(est[2], digits=digits, big.mark=big.mark), sep,
     funformat(est[3], digits=digits, big.mark=big.mark), ")")
 }
 
 # FUNCTION TO EXTRACT DISTRIBUTIONAL STATS
-fdstat <- function(x, per=perlin, digits=2, big.mark="") 
+fdstat <- function(x, per=perlin, digits=2, big.mark="", sep=" to ") 
   c(mean(x, na.rm=T),quantile(x, per, na.rm=T)) |> 
-  frange(digits=digits, big.mark=big.mark)
+  frange(digits=digits, big.mark=big.mark, sep=sep)

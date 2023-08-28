@@ -44,20 +44,42 @@ senslist <- lapply(ind, function(i) {
   # LOOP ACROSS EXPOSURE INDICES
   explist <- lapply(c("pm25_ma","pm25_2010","pm25_esc2010"), function(exp) {
     
+    # PRINT
+    cat(exp, "")
+    
     # CREATE THE MODEL FORMULA (MAIN MODEL)
     fmod <- paste("Surv(dstartfu,dexit,event) ~ ", 
       paste(conflist[[indconf]], collapse="+"), "+", exp) |> as.formula()
     
-    # MERGE WITH IMPUTED BASELINE VARS
-    data <- subset(sensdata, select=-c(sex,asscentre)) |> 
-      merge(bdbasevarmi[[1]], by="eid") |> 
-      setkey(eid, year)
-
-    # RUN THE COX MODEL
-    mod <- coxph(fmod, data=data, ties="efron")
+    # RUN THE LOOP ACROSS IMPUTTED DATA
+    est <- lapply(seq(bdbasevarmi), function(j) {
+      
+      # PRINT
+      cat(j, "")
+      
+      # MERGE THE BASELINE VARS (EXCLUDE COMMON VARIABLES AND PRESERVE THE ORDER)
+      data <- subset(sensdata, select=-c(sex,asscentre)) |> 
+        merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
+      
+      # FIT THE MODEL
+      mod <- coxph(fmod, data=data, ties="efron")
+      
+      # EXTRACT COEF/VCOV
+      ind <- grep(exp, names(coef(mod)))
+      coef <- coef(mod)[ind]
+      vcov <- vcov(mod)[ind,ind,drop=F]
+      
+      # RETURN
+      list(coef=coef, vcov=vcov)
+    })
     
+    # COMBINE THE ESTIMATES USING RUBIN'S RULE
+    coef <- lapply(est, "[[", "coef")
+    vcov <- lapply(est, "[[", "vcov")
+    poolpar <- frubin(coef, vcov)
+   
     # RETURN
-    ci.exp(mod, subset="pm25", ctr.mat=matrix(10))
+    list(coef=poolpar$coef, vcov=poolpar$vcov)
   })
   
   # RENAME

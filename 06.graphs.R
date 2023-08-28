@@ -80,9 +80,10 @@ par(oldpar)
 ################################################################################
 # PLOT OF RESULTS FROM SENSITIVITY ANALYSIS ON EXPOSURE SUMMARIES
 
-lapply(senslist, function(est) Reduce(rbind, x=est[[2]])) |> 
-  Reduce(rbind, x=_) |> as.data.frame() |>
-  rename(est="exp(Est.)", low="2.5%", high="97.5%") |>
+lapply(senslist, function(x) 
+  lapply(x$explist, function(exp) fci(exp$coef, exp$vcov, 10))) |> 
+  unlist(recursive=F) |> Reduce(rbind, x=_) |> as.data.frame() |>
+  rename(est=pm25_ma, low=V2, high=V3) |>
   mutate(cause=factor(rep(outlab, each=3), levels=outlab),
     exp=factor(rep(explab, length(outseq)), levels=explab)) |>
   ggplot(aes(y=est, x=exp)) +
