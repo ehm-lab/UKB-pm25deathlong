@@ -28,8 +28,9 @@ bdbasevarmi <- lapply(bdbasevarmi, function(x)
 fulldata <- merge(bdcohortinfo, outdeath, all.x=T) |> 
   merge(bdbasevar[, c("eid","asscentre","sex")])
 
-# CREATE AN (APPROXIMATE) MONTH OF BIRTH
-fulldata[, birthmonth:=round(as.numeric(dob)/30)]
+# CREATE YEAR AND MONTH OF BIRTH
+fulldata[, birthyear:=year(dob)]
+fulldata[, birthmonth:=paste(year(dob), month(dob), sep="-")]
 
 # DEFINE EXIT TIME AND RESET IF EVENT AFTER END OF FOLLOW-UP
 fulldata[, dexit:=fifelse(!is.na(dod), pmin(devent,dendfu), dendfu)]

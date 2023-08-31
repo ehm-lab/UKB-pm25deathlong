@@ -18,6 +18,13 @@ length(unique(fulldata$eid)) / nrow(bdcohortinfo) * 100
 fulldata[, .(fu=(max(dexit)-min(dstartfu))/365.25), by=eid][,
   .(meanfu=mean(fu), totfu=sum(fu))]
 
+# NUMBER OF DEATHS BY CAUSE
+totdeath <- mapply(function(icd, len)
+  with(fulldata, sum(!is.na(icd10) & substr(icd10,1,len) %in% icd)),
+  icd=icdcode, len=icdlen)
+names(totdeath) <- outseq
+totdeath
+
 # NUMBER AND % OF SUBJECTS IN THE SENSITIVITY ANALYSIS
 length(unique(sensdata$eid))
 length(unique(sensdata$eid)) / length(unique(fulldata$eid)) * 100
@@ -26,6 +33,3 @@ length(unique(sensdata$eid)) / length(unique(fulldata$eid)) * 100
 summary(sensdata$pm25_esc2010)
 summary(sensdata$pm25_2010)
 with(sensdata[, last(.SD), by=eid], cor(pm25_esc2010,pm25_2010))
-
-# NUMBER OF ALL-CAUSE DEATHS IN SENSITIVITY ANALYSIS
-sum(senslist[[1]]$nevent)

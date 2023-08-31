@@ -33,7 +33,7 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
     paste(conflist[[indconf]], collapse="+"), "+cbpm25") |> as.formula()
   
   # RUN THE LOOP ACROSS IMPUTTED DATA
-  est <- lapply(seq(bdbasevarmi), function(j) {
+  miestlist <- lapply(seq(bdbasevarmi), function(j) {
     
     # PRINT
     cat(j, "")
@@ -55,12 +55,12 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
   })
   
   # COMBINE THE ESTIMATES USING RUBIN'S RULE
-  coef <- lapply(est, "[[", "coef")
-  vcov <- lapply(est, "[[", "vcov")
+  coef <- lapply(miestlist, "[[", "coef")
+  vcov <- lapply(miestlist, "[[", "vcov")
   poolpar <- frubin(coef, vcov)
   
-  # RETURN
-  list(nevent=sum(fulldata$event), coef=poolpar$coef, vcov=poolpar$vcov)
+  # RETURN NUMBER OF EVENTS (IDENTICAL ACROSS IMPUTATIONS) AND COEF/VCOV
+  list(coef=poolpar$coef, vcov=poolpar$vcov)
 })
 
 # SAVE

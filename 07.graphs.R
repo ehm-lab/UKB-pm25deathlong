@@ -33,6 +33,24 @@ pmplot
 dev.off()
 
 ################################################################################
+# PLOT OF TOTAL DEATHS BY YEAR
+
+fulldata[!is.na(icd10)] |> arrange(year) |> mutate(year=factor(year)) |>
+  ggplot(aes(year)) +
+  geom_bar(col=1, fill=grey(0.8)) +
+  labs(y="Count", x="Year") +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank())
+
+# PRINT
+dev.print(png, "output/deathyear.png", height=500*4, width=500*7, res=72*6)
+
+
+fulldata[!is.na(icd10)] |> mutate(year=factor(year)) |>
+  group_by(year) |> summarise(n=length(icd10)) |>
+  barplot(n~year, data=_)
+
+################################################################################
 # MULTIPANEL PLOT OF LAG-RESPONSE RELATIONSHIPS FROM DLM
 
 # LABEL FOR THE Y-AXIS
@@ -80,8 +98,8 @@ par(oldpar)
 ################################################################################
 # PLOT OF RESULTS FROM SENSITIVITY ANALYSIS ON EXPOSURE SUMMARIES
 
-lapply(senslist, function(x) 
-  lapply(x$explist, function(exp) fci(exp$coef, exp$vcov, 10))) |> 
+lapply(seq(senslist1), function(j) 
+  lapply(senslist1[[j]], function(exp) fci(exp$coef, exp$vcov, 10))) |> 
   unlist(recursive=F) |> Reduce(rbind, x=_) |> as.data.frame() |>
   rename(est=pm25_ma, low=V2, high=V3) |>
   mutate(cause=factor(rep(outlab, each=3), levels=outlab),

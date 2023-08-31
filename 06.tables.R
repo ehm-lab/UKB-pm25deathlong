@@ -9,12 +9,6 @@
 ################################################################################
 # TABLE OF DESCRIPTIVE STATS
 
-# OUTCOMES
-tabdout <- mapply(function(icd, len)
-  with(fulldata, sum(!is.na(icd10) & substr(icd10,1,len) %in% icd)),
-  icd=icdcode, len=icdlen) |> funformat(digits=0, big.mark=",") |> as.matrix()
-dimnames(tabdout) <- list(outlab, "N")
-
 # CONTINUOUS VARIABLES
 tabdlin <- lapply(dvarlin, function(x) {
   
@@ -53,7 +47,6 @@ tabdcat <- lapply(dvarcat, function(x) {
 }) |> Reduce(rbind, x=_)
 
 # SAVE
-write.csv(tabdout, file="output/tabdout.csv")
 write.csv(tabdlin, file="output/tabdlin.csv")
 write.csv(tabdcat, file="output/tabdcat.csv")
 
@@ -84,16 +77,47 @@ write.csv(tabmod, file="output/tabmod.csv")
 ################################################################################
 # TABLE OF RESULTS FROM SENSITIVITY ANALYSIS
 
-# MAKE THE TABLE
-tabsens <- lapply(senslist, function(x) {
-  est <- lapply(x$explist, function(exp) fci(exp$coef, exp$vcov, 10)) |> 
+# TABLE ON RESULTS USING DIFFERENT EXPOSURE INDICES
+tabsens1 <- lapply(seq(senslist1), function(j) {
+  est <- lapply(senslist1[[j]], function(exp) fci(exp$coef, exp$vcov, 10)) |> 
     sapply(frange) |> t()
-  c(N=funformat(x[[1]], digits=0, big.mark=","), est)
+  nevent <- sum(!is.na(sensdata$icd10) & substr(sensdata$icd10,1,icdlen[j]) %in%
+      icdcode[[j]]) |> funformat(digits=0, big.mark=",")
+  c(nevent, est)
 })|> Reduce(rbind, x=_)
-rownames(tabsens) <- outlab
+dimnames(tabsens1) <- list(outlab, c("N", names(senslist1[[1]])))
+
+# TABLE ON RESULTS USING ALTERNATIVE METHODS TO CONTROL FOR AGE
+tabsens2 <- lapply(seq(senslist2), function(j) {
+  est <- lapply(senslist2[[j]], function(exp) fci(exp$coef, exp$vcov, 10)) |> 
+    sapply(frange) |> t()
+  nevent <- sum(!is.na(fulldata$icd10) & substr(fulldata$icd10,1,icdlen[j]) %in%
+      icdcode[[j]]) |> funformat(digits=0, big.mark=",")
+  c(nevent, est)
+})|> Reduce(rbind, x=_)
+dimnames(tabsens2) <- list(outlab, c("N", names(senslist2[[1]])))
 
 # SAVE
-write.csv(tabsens, file="output/tabsens.csv")
+write.csv(tabsens1, file="output/tabsens1.csv")
+write.csv(tabsens2, file="output/tabsens2.csv")
+
+################################################################################
+# TABLE OF RISK SET SAMPLE SIZE IN DIFFERENT MODELS TO CONTROL FOR AGE
+
+# GET THE STRATIFYING VARIABLES 
+stratavarlist <- lapply(fadjagelist, function(x)
+  formula(paste("~",x[1])) |> get_all_vars(fulldata) |> names())
+
+# COMPUTE THE RISK SET SAMPLE SIZES
+tabnriskset <- lapply(stratavarlits, function(group) {
+  nriskset <- fulldata[, fnriskset(!is.na(icd10), eid, dstartfu, dexit), by=group]
+  c(summary(nriskset$n), excluded=sum(nriskset$n==1))|> 
+    funformat(digits=0, big.mark=",")
+}) |> Reduce(rbind, x=_)
+rownames(tabnriskset) <- names(fadjagelist)
+
+# SAVE
+write.csv(tabnriskset, file="output/tabnriskset.csv")
 
 ################################################################################
 # TABLE OF OVERALL CUMULATIVE RISK FROM DLMS

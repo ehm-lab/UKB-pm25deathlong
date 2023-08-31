@@ -73,8 +73,8 @@ dvarcat <- c("sex","ethnic","employ","educ","income","ipaq",
 perlin <- c(5,95)/100
 
 # SET PARALLELIZATION 
-ncores <- detectCores()
-pack <- c("dlnm", "data.table", "survival")
+# ncores <- detectCores()
+# pack <- c("dlnm", "data.table", "survival")
 
 # LOAD THE FUNCTION FOR RUBIN'S RULE
 source(paste0(fundir, "frubin.R"))
@@ -101,3 +101,10 @@ frange <- function(est, digits=2, big.mark="", sep="-") {
 fdstat <- function(x, per=perlin, digits=2, big.mark="", sep=" to ") 
   c(mean(x, na.rm=T),quantile(x, per, na.rm=T)) |> 
   frange(digits=digits, big.mark=big.mark, sep=sep)
+
+# FUNCTION TO COMPUTE THE SIZE OF THE RISK SET SAMPLES
+fnriskset <- function(event, eid, dstartfu, dexit) {
+  ind <- which(as.logical(event))
+  n <- sapply(ind, function(i) sum(dstartfu<dexit[i] & dexit>=dexit[i]))
+  list(eid=eid[ind], n=n)
+}

@@ -3,35 +3,27 @@
 ################################################################################
 
 ################################################################################
-# SENSITIVITY ANALYSIS ON THE COMPARISON OF EXPOSURE SOURCE
+# SENSITIVITY ANALYSIS ABOUT CONTROLLING FOR AGE
 ################################################################################
 
-# CREATE NEW DATASET FOR SECONDARY ANALYSIS
-sensdata <- fulldata
-
-# LOAD PREVIOUS UKB PM DATA, AND MERGE (REMOVING MISSING)
-bdenvvar <- readRDS(paste0(maindir, "bdenvvar.RDS")) |> as.data.table() |> 
-  subset(select=c(eid, pm25_esc2010)) |> na.omit()
-sensdata <- merge(fulldata, bdenvvar, by="eid")
-
-# MERGE NEW PM DATA FOR 2010
-sensdata <- pmdata[year==2010, c("eid","pm25")] |> rename(pm25_2010=pm25) |>
-  merge(sensdata, y=_)
-
-# COMPUTE MOVING AVERAGE OF TIME-VARYING PM DATA
-# NB: THIS CREATES A RISK SUMMARY IDENTICAL TO A DLM WITH A SINGLE STRATUM
-sensdata[, pm25_ma:=rowMeans(.SD), .SDcols=paste0("pm25_",0:7)]
+# DEFINE (PARTS OF) MODEL FORMULAE CORRESPONDING TO ALTERNATIVE METHODS
+fadjagelist <- list(
+  month = "strata(asscentre, sex, birthmonth)",
+  year = "strata(asscentre, sex, birthyear)",
+  splines = c("strata(asscentre, sex)", 
+    "ns(agestartfu, knots = equalknots(agestartfu,4))")
+)
 
 # LOOP ACROSS MODELS (ONLY MAIN)
 ind <- which(modcomb$indconf==6 & modcomb$lag==7 & modcomb$indarglag==1)
-senslist1 <- lapply(ind, function(i) {
+senslist2 <- lapply(ind, function(i) {
   
   # EXTRACT PARAMETERS
   indout <- modcomb[i,1]
   indconf <- modcomb[i,2]
   lag <- modcomb[i,3]
   indarglag <- modcomb[i,4]
-  
+
   # PRINT
   cat("\n", "indout=", indout, " indconf=", indconf, " lag=", lag, 
     " indarglag=", indarglag, "\n", sep="")
@@ -39,17 +31,22 @@ senslist1 <- lapply(ind, function(i) {
   # SELECT THE OUTCOME AND DEFINE THE EVENT
   icd <- icdcode[[indout]]
   len <- icdlen[indout]
-  sensdata[, event:= (!is.na(icd10) & substr(icd10,1,len) %in% icd) + 0]
+  fulldata[, event:= (!is.na(icd10) & substr(icd10,1,len) %in% icd) + 0]
   
-  # LOOP ACROSS EXPOSURE INDICES
-  estlist <- lapply(c("pm25_ma","pm25_2010","pm25_esc2010"), function(exp) {
+  # COMPUTE MOVING AVERAGE OF TIME-VARYING PM DATA
+  # NB: THIS CREATES A RISK SUMMARY IDENTICAL TO A DLM WITH A SINGLE STRATUM
+  fulldata[, pm25_ma:=rowMeans(.SD), .SDcols=paste0("pm25_",0:7)]
+  
+  # LOOP ACROSS METHODS FOR AGE CONTROL
+  estlist <- lapply(seq(fadjagelist), function(f) {
     
     # PRINT
-    cat(exp, "")
-    
+    cat(names(fadjagelist)[f], "")
+
     # CREATE THE MODEL FORMULA (MAIN MODEL)
+    conf <- c(conflist[[indconf]][-1], fadjagelist[[f]])
     fmod <- paste("Surv(dstartfu,dexit,event) ~ ", 
-      paste(conflist[[indconf]], collapse="+"), "+", exp) |> as.formula()
+      paste(conf, collapse="+"), "+pm25_ma") |> as.formula()
     
     # RUN THE LOOP ACROSS IMPUTTED DATA
     miestlist <- lapply(seq(bdbasevarmi), function(j) {
@@ -58,14 +55,14 @@ senslist1 <- lapply(ind, function(i) {
       cat(j, "")
       
       # MERGE THE BASELINE VARS (EXCLUDE COMMON VARIABLES AND PRESERVE THE ORDER)
-      data <- subset(sensdata, select=-c(sex,asscentre)) |> 
+      data <- subset(fulldata, select=-c(sex,asscentre)) |> 
         merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
       
       # FIT THE MODEL
       mod <- coxph(fmod, data=data, ties="efron")
       
       # EXTRACT COEF/VCOV
-      ind <- grep(exp, names(coef(mod)))
+      ind <- grep("pm25_ma", names(coef(mod)))
       coef <- coef(mod)[ind]
       vcov <- vcov(mod)[ind,ind,drop=F]
       
@@ -83,14 +80,14 @@ senslist1 <- lapply(ind, function(i) {
   })
   
   # RENAME
-  names(estlist) <- explab
+  names(estlist) <- names(fadjagelist)
 
   # RETURN
   estlist
 })
 
 # RENAME
-names(senslist1) <- outseq
+names(senslist2) <- outseq
 
 # SAVE
-saveRDS(senslist1, file="temp/senslist1.RDS")
+saveRDS(senslist2, file="temp/senslist2.RDS")
