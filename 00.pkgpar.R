@@ -43,7 +43,7 @@ arglaglist <- list(list("strata", df=1), list(fun="ns", df=4, int=T),
   list(fun="strata", breaks=c(1,3,5), int=T))
 
 # LISTS FOR CONFOUNDER MODELS
-conf1 <- "strata(asscentre, sex, birthmonth)"
+conf1 <- "strata(asscentre, sex, birthyear)"
 conf2 <- c(conf1, "tdi")
 conf3 <- c(conf1, "ethnic", "educ", "income", "employ")
 conf4 <- union(conf2,conf3)
@@ -103,8 +103,8 @@ fdstat <- function(x, per=perlin, digits=2, big.mark="", sep=" to ")
   frange(digits=digits, big.mark=big.mark, sep=sep)
 
 # FUNCTION TO COMPUTE THE SIZE OF THE RISK SET SAMPLES
-fnriskset <- function(event, eid, dstartfu, dexit) {
+fnriskset <- function(event, eid, start, exit) {
   ind <- which(as.logical(event))
-  n <- sapply(ind, function(i) sum(dstartfu<dexit[i] & dexit>=dexit[i]))
+  n <- sapply(ind, function(i) sum(start<exit[i] & exit>=exit[i]))
   list(eid=eid[ind], n=n)
 }

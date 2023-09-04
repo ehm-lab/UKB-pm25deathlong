@@ -45,7 +45,6 @@ fulldata[!is.na(icd10)] |> arrange(year) |> mutate(year=factor(year)) |>
 # PRINT
 dev.print(png, "output/deathyear.png", height=500*4, width=500*7, res=72*6)
 
-
 fulldata[!is.na(icd10)] |> mutate(year=factor(year)) |>
   group_by(year) |> summarise(n=length(icd10)) |>
   barplot(n~year, data=_)

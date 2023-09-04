@@ -109,7 +109,7 @@ stratavarlist <- lapply(fadjagelist, function(x)
   formula(paste("~",x[1])) |> get_all_vars(fulldata) |> names())
 
 # COMPUTE THE RISK SET SAMPLE SIZES
-tabnriskset <- lapply(stratavarlits, function(group) {
+tabnriskset <- lapply(stratavarlist, function(group) {
   nriskset <- fulldata[, fnriskset(!is.na(icd10), eid, dstartfu, dexit), by=group]
   c(summary(nriskset$n), excluded=sum(nriskset$n==1))|> 
     funformat(digits=0, big.mark=",")
