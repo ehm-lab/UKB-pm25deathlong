@@ -36,9 +36,9 @@ fulldata[, birthmonth:=paste(year(dob), month(dob), sep="-")]
 fulldata[, dexit:=fifelse(!is.na(dod), pmin(devent,dendfu), dendfu)]
 fulldata[devent>dexit, `:=`(devent=NA, icd10=NA)]
 
-# SPLIT THE DATA BY CALENDAR YEAR
+# SPLIT THE DATA BY CALENDAR YEAR USING FIRST DAY OF THE YEAR
 cut <- year(range(fulldata$dstartfu)[1]):year(range(fulldata$dendfu)[2]) |>
-  paste0("-12-31") |> as.Date() |> as.numeric()
+  paste0("-01-01") |> as.Date() |> as.numeric()
 fulldata[, `:=`(dstartfu=as.numeric(dstartfu), dexit=as.numeric(dexit))]
 fulldata <- survSplit(Surv(dstartfu, dexit, !is.na(dod)) ~., fulldata, cut=cut) |> 
   mutate(event=NULL) |> as.data.table()
@@ -46,8 +46,8 @@ fulldata <- survSplit(Surv(dstartfu, dexit, !is.na(dod)) ~., fulldata, cut=cut) 
 # RESET THE DATA LIST DEATHS ONLY ON THE LAST SPLIT PERIOD
 fulldata[!is.na(devent) & as.numeric(devent)!=dexit, `:=`(devent=NA,icd10=NA)]
 
-# ASSIGN THE YEAR (AS THE ENTER TIME AFTER SPLITTING)
-fulldata[, year:= year(as.Date(dstartfu, origin=as.Date("1970-01-01")))]
+# ASSIGN THE YEAR (USING THE ENTER TIME AFTER SPLITTING MINUS ONE)
+fulldata[, year:= year(as.Date(dstartfu, origin=as.Date("1970-01-01")))-1]
 
 # CREATE AGE AT ENTER AND EXIT TIMES (AS DAYS)
 fulldata[, `:=`(agestartfu=dstartfu-as.numeric(dob), ageexit=dexit-as.numeric(dob))]

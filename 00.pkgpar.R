@@ -15,8 +15,8 @@ library(ggplot2); library(patchwork) ; library(scales)
 #library(foreach) ; library(doParallel)
 
 # DIRECTORIES
-maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/"
-#maindir <- "C:/Users/anton/Desktop/data/processed/"
+maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/ukb671152/"
+#maindir <- "C:/Users/anton/Desktop/data/processed/ukb671152/"
 pmdir <- "V:/VolumeQ/AGteam/Biobank/data/original/envdata/"
 #pmdir <- "C:/Users/anton/Desktop/data/"
 fundir <- "V:/VolumeQ/AGteam/Biobank/data/scripts/functions/"
