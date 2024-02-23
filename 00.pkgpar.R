@@ -15,12 +15,12 @@ library(ggplot2); library(patchwork) ; library(scales)
 #library(foreach) ; library(doParallel)
 
 # DIRECTORIES
-maindir <- "V:/VolumeQ/AGteam/Biobank/data/processed/ukb671152/"
+maindir <- "V:/VolumeQ/AGteam/UKBiobank/data/processed/ukb671152/"
 #maindir <- "C:/Users/anton/Desktop/data/processed/ukb671152/"
-pmdir <- "V:/VolumeQ/AGteam/Biobank/data/original/envdata/"
+pmdir <- "V:/VolumeQ/AGteam/UKBiobank/data/original/envdata/"
 #pmdir <- "C:/Users/anton/Desktop/data/"
-fundir <- "V:/VolumeQ/AGteam/Biobank/data/scripts/functions/"
-#fundir <- "C:/Users/anton/Desktop/data/scripts/functions/"
+fundir <- "V:/VolumeQ/AGteam/UKBiobank/scripts/functions/"
+#fundir <- "C:/Users/anton/Desktop/scripts/functions/"
 
 # SELECT MORTALITY OUTCOMES
 outseq <- c("all","nonacc","cvd","resp","lung")

@@ -19,13 +19,27 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
   cat("\n", "indout=", indout, " indconf=", indconf, " lag=", lag, 
     " indarglag=", indarglag, "\n", sep="")
 
-  # SELECT THE OUTCOME AND DEFINE THE EVENT
+  ################################################
+  # SELECT THE OUTCOME (SPECIFIC DEATH CAUSE)
+  ################################################
   icd <- icdcode[[indout]]
   len <- icdlen[indout]
-  fulldata[, event:= (!is.na(icd10) & substr(icd10,1,len) %in% icd) + 0]
+  outdata <- outdeath[substr(icd10,1,len) %in% icd]
+  setkey(outdata, eid, devent)
+  
+    # MERGE WITH FULL DATA
+  data <- merge(fulldata, outdata[, c("eid","devent")], all.x=T)
+  setkey(data, eid, year)
 
+  # DEFINE THE EVENT (ONLY LAST TIME PERIOD WITHIN FOLLOW-UP)
+  data[, event:=(!is.na(devent) & devent>dstartfu & devent<=dendfu) + 0]
+  
+  # DEFINE THE EXIT TIME AND EXCLUDE SUBJECT/PERIOD STARTING AFTER
+  data[, dexit:=fifelse(event==1, as.numeric(devent), dendfu)]
+  data <- data[dstartfu<dexit]
+  
   # DERIVE THE CROSS-BASES FOR PM2.5
-  cbpm25 <- crossbasis(as.matrix(fulldata[, paste0("pm25_",0:7)])[,seq(lag+1)],
+  cbpm25 <- crossbasis(as.matrix(data[, paste0("pm25_",0:7)])[,seq(lag+1)],
     lag=lag, argvar=argvar, arglag=arglaglist[[indarglag]])
   
   # CREATE THE MODEL FORMULA
@@ -39,11 +53,11 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
     cat(j, "")
     
     # MERGE THE BASELINE VARS (EXCLUDE COMMON VARIABLES AND PRESERVE THE ORDER)
-    data <- subset(fulldata, select=-c(sex,asscentre)) |> 
+    datami <- subset(data, select=-c(sex,asscentre)) |> 
       merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
     
     # FIT THE MODEL
-    mod <- coxph(fmod, data=data, ties="efron")
+    mod <- coxph(fmod, data=datami, ties="efron")
     
     # EXTRACT COEF/VCOV
     ind <- grep("cbpm25", names(coef(mod)))
