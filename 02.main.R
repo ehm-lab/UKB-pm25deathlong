@@ -31,11 +31,13 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
   data <- merge(fulldata, outdata[, c("eid","devent")], all.x=T)
   setkey(data, eid, year)
 
-  # DEFINE THE EVENT (ONLY LAST TIME PERIOD WITHIN FOLLOW-UP)
+  # DEFINE THE EVENT WITHIN SPLIT PERIODS
   data[, event:=(!is.na(devent) & devent>dstartfu & devent<=dendfu) + 0]
   
-  # DEFINE THE EXIT TIME AND EXCLUDE SUBJECT/PERIOD STARTING AFTER
-  data[, dexit:=fifelse(event==1, as.numeric(devent), dendfu)]
+  # DEFINE THE EXIT TIME AS THE DATE OF THE EVENT FROM WHEN IT HAPPENS AND ON
+  data[, dexit:=fifelse(cumsum(event)>0, as.numeric(devent), dendfu), by=eid]
+
+  # EXCLUDE SUBJECT/PERIOD STARTING AFTER THE EXIT TIME
   data <- data[dstartfu<dexit]
   
   # DERIVE THE CROSS-BASES FOR PM2.5
