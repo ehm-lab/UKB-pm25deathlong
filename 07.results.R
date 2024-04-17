@@ -11,23 +11,22 @@
 
 # TOTAL SUBJECT IN THE ORIGINAL COHORT AND IN THE FINAL DATASET
 nrow(bdcohortinfo)
-length(unique(fulldata$eid))
-length(unique(fulldata$eid)) / nrow(bdcohortinfo) * 100
+reslist[[1]]$nsub
+reslist[[1]]$nsub / nrow(bdcohortinfo) * 100
 
 # LENGTH OF FOLLOW-UP: AVERAGE AND TOTAL
-fulldata[, .(fu=(max(dexit)-min(dstartfu))/365.25), by=eid][,
-  .(meanfu=mean(fu), totfu=sum(fu))]
+reslist[[1]]$totfu
+reslist[[1]]$totfu / reslist[[1]]$nsub
 
 # NUMBER OF DEATHS BY CAUSE
-totdeath <- mapply(function(icd, len)
-  with(fulldata, sum(!is.na(icd10) & substr(icd10,1,len) %in% icd)),
-  icd=icdcode, len=icdlen)
+ind <- which(modcomb$indconf==6 & modcomb$lag==7 & modcomb$indarglag==1)
+totdeath <- sapply(ind, function(i) reslist[[i]]$nevent)
 names(totdeath) <- outseq
 totdeath
 
-# NUMBER AND % OF SUBJECTS IN THE SENSITIVITY ANALYSIS
-length(unique(sensdata$eid))
-length(unique(sensdata$eid)) / length(unique(fulldata$eid)) * 100
+# NUMBER AND % OF SUBJECTS IN THE FIRST SENSITIVITY ANALYSIS
+senslist1[[1]][[1]]$nsub
+senslist1[[1]][[1]]$nsub / reslist[[1]]$nsub * 100
 
 # SUMMARY AND CORRELATION BETWEEN OLD AND NEW PM DATA
 summary(sensdata$pm25_esc2010)

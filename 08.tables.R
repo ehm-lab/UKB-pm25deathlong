@@ -13,7 +13,7 @@
 tabdlin <- lapply(dvarlin, function(x) {
   
   # SELECT THE DATA
-  dd <- subset(bdbasevar, eid %in% fulldata$eid)
+  dd <- subset(bdbasevar, eid %in% maindata$eid)
   
   # EXTRACT STATS AND MISSING
   stat <- fdstat(dd[[x]])
@@ -31,7 +31,7 @@ tabdlin <- lapply(dvarlin, function(x) {
 tabdcat <- lapply(dvarcat, function(x) {
   
   # SELECT THE DATA
-  dd <- subset(bdbasevar, eid %in% fulldata$eid)
+  dd <- subset(bdbasevar, eid %in% maindata$eid)
   
   # EXTRACT STATS AND MISSING
   stat <- table(dd[[x]])
@@ -81,8 +81,7 @@ write.csv(tabmod, file="output/tabmod.csv")
 tabsens1 <- lapply(seq(senslist1), function(j) {
   est <- lapply(senslist1[[j]], function(exp) fci(exp$coef, exp$vcov, 10)) |> 
     sapply(frange) |> t()
-  nevent <- sum(!is.na(sensdata$icd10) & substr(sensdata$icd10,1,icdlen[j]) %in%
-      icdcode[[j]]) |> funformat(digits=0, big.mark=",")
+  nevent <- funformat(senslist1[[j]][[1]]$nevent, digits=0, big.mark=",")
   c(nevent, est)
 })|> Reduce(rbind, x=_)
 dimnames(tabsens1) <- list(outlab, c("N", names(senslist1[[1]])))
@@ -91,26 +90,42 @@ dimnames(tabsens1) <- list(outlab, c("N", names(senslist1[[1]])))
 tabsens2 <- lapply(seq(senslist2), function(j) {
   est <- lapply(senslist2[[j]], function(exp) fci(exp$coef, exp$vcov, 10)) |> 
     sapply(frange) |> t()
-  nevent <- sum(!is.na(fulldata$icd10) & substr(fulldata$icd10,1,icdlen[j]) %in%
-      icdcode[[j]]) |> funformat(digits=0, big.mark=",")
+  nevent <- funformat(senslist2[[j]][[1]]$nevent, digits=0, big.mark=",")
   c(nevent, est)
 })|> Reduce(rbind, x=_)
 dimnames(tabsens2) <- list(outlab, c("N", names(senslist2[[1]])))
 
+# TABLE ON RESULTS WITH RESRTICTION ON THE FOLLOW-UP PERIOD
+# - LIMITING THE ANALYSIS TO PRE-COVID PERIOD (PRE-2020)
+# - USING A WASHOUT PERIOD (POST-2013)
+tabsens3_4 <- lapply(seq(senslist3), function(j) {
+  sens3 <- funformat(senslist3[[j]]$nevent, digits=0, big.mark=",") |>
+    c(fci(senslist3[[j]]$coef, senslist3[[j]]$vcov, 10) |> frange())
+  sens4 <- funformat(senslist4[[j]]$nevent, digits=0, big.mark=",") |>
+    c(fci(senslist4[[j]]$coef, senslist3[[j]]$vcov, 10) |> frange())
+  cbind(t(sens3), t(sens4))
+})|> Reduce(rbind, x=_)
+dimnames(tabsens3_4) <- list(outlab, rep(c("N", "HR (95%CI)"),2))
+
 # SAVE
 write.csv(tabsens1, file="output/tabsens1.csv")
 write.csv(tabsens2, file="output/tabsens2.csv")
+write.csv(tabsens3_4, file="output/tabsens3_4.csv")
 
 ################################################################################
 # TABLE OF RISK SET SAMPLE SIZE IN DIFFERENT MODELS TO CONTROL FOR AGE
 
 # GET THE STRATIFYING VARIABLES 
-stratavarlist <- lapply(fadjagelist, function(x)
-  formula(paste("~",x[1])) |> get_all_vars(fulldata) |> names())
-
+stratavarlist <- lapply(fadjagelist, function(x) {
+  data <- subset(maindata, select=-c(sex,asscentre)) |> 
+      merge(bdbasevarmi[[1]], by="eid")
+  formula(paste("~",x[1])) |> get_all_vars(data) |> names()
+})
+  
 # COMPUTE THE RISK SET SAMPLE SIZES
 tabnriskset <- lapply(stratavarlist, function(group) {
-  nriskset <- fulldata[, fnriskset(!is.na(icd10), eid, dstartfu, dexit), by=group]
+  data <- merge(maindata, outdeath, all.x=T)
+  nriskset <- data[, fnriskset(!is.na(devent), eid, dstartfu, dendfu), by=group]
   c(summary(nriskset$n), excluded=sum(nriskset$n==1))|> 
     funformat(digits=0, big.mark=",")
 }) |> Reduce(rbind, x=_)

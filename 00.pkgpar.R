@@ -47,9 +47,9 @@ conf1 <- "strata(asscentre, sex, birthyear)"
 conf2 <- c(conf1, "tdi")
 conf3 <- c(conf1, "ethnic", "educ", "income", "employ")
 conf4 <- union(conf2,conf3)
-conf5 <- c(conf4, "smkstatus", "smkpackyear", "alcoholintake", "wthratio",
+conf5 <- c(conf4, "urbrur", "greenspace")
+conf6 <- c(conf5, "smkstatus", "smkpackyear", "alcoholintake", "wthratio",
   "ipaq", "livealone", "health", "illness")
-conf6 <- c(conf5, "urbrur", "greenspace")
 conflist <- lapply(paste0("conf",1:6), get)
 
 # CREATE THE COMBINATIONS FOR THE MODELS (OUTCOME, CONFOUNDERS, LAG, )

@@ -16,7 +16,7 @@ limlabs <- c("WHO AQG 2021", "WHO AQG 2005",
 ylab <- expression(paste("Annual exposure to ",PM[2.5]," (",mu,"g/",m^3,")"))
 
 pmplot <- pmdata |> 
-  subset(eid %in% fulldata$eid, select=c("eid", "year", "pm25")) |> 
+  subset(eid %in% maindata$eid, select=c("eid", "year", "pm25")) |> 
   na.omit() |>
   ggplot(aes(factor(year), pm25)) +
   geom_hline(yintercept=lim, linetype=2) +
@@ -35,8 +35,8 @@ dev.off()
 ################################################################################
 # PLOT OF TOTAL DEATHS BY YEAR
 
-fulldata[!is.na(icd10)] |> arrange(year) |> mutate(year=factor(year)) |>
-  ggplot(aes(year)) +
+merge(maindata, outdeath) |>
+  ggplot(aes(factor(year(devent)))) +
   geom_bar(col=1, fill=grey(0.8)) +
   labs(y="Count", x="Year") +
   theme_bw() +
@@ -44,10 +44,6 @@ fulldata[!is.na(icd10)] |> arrange(year) |> mutate(year=factor(year)) |>
 
 # PRINT
 dev.print(png, "output/deathyear.png", height=500*4, width=500*7, res=72*6)
-
-fulldata[!is.na(icd10)] |> mutate(year=factor(year)) |>
-  group_by(year) |> summarise(n=length(icd10)) |>
-  barplot(n~year, data=_)
 
 ################################################################################
 # MULTIPANEL PLOT OF LAG-RESPONSE RELATIONSHIPS FROM DLM
