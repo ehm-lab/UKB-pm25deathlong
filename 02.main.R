@@ -44,13 +44,16 @@ reslist <- lapply(seq(nrow(modcomb)), function(i) {
   data <- survSplit(Surv(dstartfu, dexit, event) ~., data, cut=cut) |> 
     as.data.table()
   
-  # ASSIGN THE YEAR (USING THE ENTER TIME AFTER SPLITTING MINUS ONE)
-  data[, year:= year(as.Date(dstartfu, origin=as.Date("1970-01-01")))-1]
+  # ASSIGN THE YEAR AND THE YEAR OF LAG-0 EXPOSURE (MINUS ONE)
+  data[, year:= year(as.Date(dstartfu, origin=as.Date("1970-01-01")))]
+  data[, yearexp:= year-1]
   
-  # MERGE WITH PM DATA (OMITTING MISSING TO KEEP FULL LAG 0-7 HISTORIES)
+  # MERGE WITH PM DATA USING LAG-0 YEAR DEFINITION
+  # NB: OMITTING MISSING TO KEEP FULL LAG 0-7 HISTORIES
   setkey(data, eid, year)
   setkey(pmdata, eid, year)
-  data <- merge(data, na.omit(pmdata), by=c("eid","year"))
+  data <- merge(data, na.omit(pmdata), by.x=c("eid","yearexp"), 
+    by.y=c("eid","year"))
   
   # DERIVE THE CROSS-BASES FOR PM2.5
   cbpm25 <- crossbasis(as.matrix(data[, paste0("pm25_",0:7)])[,seq(lag+1)],

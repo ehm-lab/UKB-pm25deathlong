@@ -49,7 +49,7 @@ conf3 <- c(conf1, "ethnic", "educ", "income", "employ")
 conf4 <- union(conf2,conf3)
 conf5 <- c(conf4, "urbrur", "greenspace")
 conf6 <- c(conf5, "smkstatus", "smkpackyear", "alcoholintake", "wthratio",
-  "ipaq", "livealone", "health", "illness")
+  "ipaq", "livealone")
 conflist <- lapply(paste0("conf",1:6), get)
 
 # CREATE THE COMBINATIONS FOR THE MODELS (OUTCOME, CONFOUNDERS, LAG, )
@@ -66,8 +66,8 @@ rownames(modcomb) <- NULL
 
 # LISTS OF VARIABLES FOR DESCRIPTIVE STATS
 dvarlin <- c("agebase","wthratio","smkpackyear","tdi","greenspace")
-dvarcat <- c("sex","ethnic","employ","educ","income","ipaq",
-  "alcoholintake","smkstatus","livealone","health","illness","urbrur")
+dvarcat <- c("sex","ethnic","employ","educ","income","urbrur","ipaq",
+  "alcoholintake","smkstatus","livealone")
 
 # PERCENTILES USED FOR RANGE OF CONTINUOUS VARIABLES
 perlin <- c(5,95)/100
