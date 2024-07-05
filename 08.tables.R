@@ -6,6 +6,25 @@
 # TABLES
 ################################################################################
 
+# SELECT THE ID OF SUBJECTS INCLUDED IN THE ANALYSIS (SEE 02.main.R)
+data <- merge(maindata, outdeath[, c("eid","devent")], all.x=T)
+data[, event:=(!is.na(devent) & devent<=dendfu) + 0]
+data[, dexit:=fifelse(event==1, devent, dendfu)]
+data <- data[dstartfu<dexit]
+cut <- year(range(data$dstartfu)[1]):year(range(data$dendfu)[2]) |>
+  paste0("-01-01") |> as.Date() |> as.numeric()
+data[, `:=`(dstartfu=as.numeric(dstartfu), dexit=as.numeric(dexit))]
+data <- survSplit(Surv(dstartfu, dexit, event) ~., data, cut=cut) |>
+  as.data.table()
+data[, year:= year(as.Date(dstartfu, origin=as.Date("1970-01-01")))]
+data[, yearexp:= year-1]
+setkey(data, eid, year)
+setkey(pmdata, eid, year)
+data <- merge(data, na.omit(pmdata), by.x=c("eid","yearexp"),
+  by.y=c("eid","year"))
+eidsel <- unique(data$eid)
+rm(data)
+
 ################################################################################
 # TABLE OF DESCRIPTIVE STATS
 
@@ -13,7 +32,7 @@
 tabdlin <- lapply(dvarlin, function(x) {
   
   # SELECT THE DATA
-  dd <- subset(bdbasevar, eid %in% maindata$eid)
+  dd <- subset(bdbasevar, eid %in% eidsel)
   
   # EXTRACT STATS AND MISSING
   stat <- fdstat(dd[[x]])
@@ -31,7 +50,7 @@ tabdlin <- lapply(dvarlin, function(x) {
 tabdcat <- lapply(dvarcat, function(x) {
   
   # SELECT THE DATA
-  dd <- subset(bdbasevar, eid %in% maindata$eid)
+  dd <- subset(bdbasevar, eid %in% eidsel)
   
   # EXTRACT STATS AND MISSING
   stat <- table(dd[[x]])
