@@ -3,12 +3,11 @@
 ################################################################################
 
 ################################################################################
-# SENSITIVITY ANALYSIS ABOUT COVID (RESTRICT TO PERIOD PRE-2020)
+# PERFORM THE MAIN ANALYSIS
 ################################################################################
 
-# LOOP ACROSS MODELS (ONLY MAIN)
-ind <- which(modcomb$indconf==6 & modcomb$lag==7 & modcomb$indarglag==1)
-senslist3 <- lapply(ind, function(i) {
+# LOOP ACROSS MODELS
+reslist <- lapply(seq(nrow(modcomb)), function(i) {
   
   # EXTRACT PARAMETERS
   indout <- modcomb[i,1]
@@ -19,10 +18,8 @@ senslist3 <- lapply(ind, function(i) {
   # PRINT
   cat("\n", "indout=", indout, " indconf=", indconf, " lag=", lag, 
     " indarglag=", indarglag, "\n", sep="")
-  
-  ################################################
+
   # SELECT THE OUTCOME (SPECIFIC DEATH CAUSE)
-  ################################################
   icd <- icdcode[[indout]]
   len <- icdlen[indout]
   outdata <- outdeath[substr(icd10,1,len) %in% icd]
@@ -30,7 +27,7 @@ senslist3 <- lapply(ind, function(i) {
   
   # MERGE WITH MAIN DATA
   data <- merge(maindata, outdata[, c("eid","devent")], all.x=T)
-  
+
   # DEFINE THE EVENT AND EXIT TIME
   data[, event:=(!is.na(devent) & devent<=dendfu) + 0]
   data[, dexit:=fifelse(event==1, devent, dendfu)]
@@ -56,13 +53,13 @@ senslist3 <- lapply(ind, function(i) {
   data <- merge(data, na.omit(pmdata), by.x=c("eid","yearexp"), 
     by.y=c("eid","year"))
   
-  # COMPUTE MOVING AVERAGE OF TIME-VARYING PM DATA
-  # NB: THIS CREATES A RISK SUMMARY IDENTICAL TO A DLM WITH A SINGLE STRATUM
-  data[, pm25_ma:=rowMeans(.SD), .SDcols=paste0("pm25_",0:7)]
+  # DERIVE THE CROSS-BASES FOR PM2.5
+  cbpm25 <- crossbasis(as.matrix(data[, paste0("pm25_",0:7)])[,seq(lag+1)],
+    lag=lag, argvar=argvar, arglag=arglaglist[[indarglag]])
   
   # CREATE THE MODEL FORMULA
   fmod <- paste("Surv(dstartfu,dexit,event) ~ ", 
-    paste(conflist[[indconf]], collapse="+"), "+pm25_ma") |> as.formula()
+    paste(conflist[[indconf]], collapse="+"), "+cbpm25") |> as.formula()
   
   # RUN THE LOOP ACROSS IMPUTTED DATA
   miestlist <- lapply(seq(bdbasevarmi), function(j) {
@@ -75,10 +72,10 @@ senslist3 <- lapply(ind, function(i) {
       merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
     
     # FIT THE MODEL
-    mod <- coxph(fmod, data=datami, ties="efron", subset=year<2020)
+    mod <- coxph(fmod, data=datami, ties="efron")
     
     # EXTRACT COEF/VCOV
-    ind <- grep("pm25_ma", names(coef(mod)))
+    ind <- grep("cbpm25", names(coef(mod)))
     coef <- coef(mod)[ind]
     vcov <- vcov(mod)[ind,ind,drop=F]
     
@@ -99,8 +96,5 @@ senslist3 <- lapply(ind, function(i) {
     nsub=miestlist[[1]]$nsub, totfu=miestlist[[1]]$totfu)
 })
 
-# RENAME
-names(senslist3) <- outseq
-
 # SAVE
-saveRDS(senslist3, file="temp/senslist3.RDS")
+saveRDS(reslist, file="temp/reslist.RDS")

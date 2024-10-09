@@ -1,0 +1,29 @@
+################################################################################
+# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+################################################################################
+
+################################################################################
+# DLM ANALYSIS
+################################################################################
+
+# DERIVE THE CROSS-BASES FOR PM2.5
+# LINEAR EXP-RESP, SPLINE AND STRATA LAG-RESP
+argvar <- list(fun="lin") 
+arglag1 <- list(fun="ns", df=4, int=T)
+arglag2 <- list(fun="strata", breaks=c(1,3,5), int=T)
+cbpm1 <- crossbasis(as.matrix(data[, paste0("pm25_",0:7)])[,seq(lag+1)],
+  lag=lag, argvar=argvar, arglag=arglag1)
+cbpm2 <- crossbasis(as.matrix(data[, paste0("pm25_",0:7)])[,seq(lag+1)],
+  lag=lag, argvar=argvar, arglag=arglag2)
+
+# FIT THE MODELS UPDATING THE MAIN MODEL
+dlnmmod1 <- update(mainmod, . ~ . - pm25_ma + cbpm1)
+dlnmmod2 <- update(mainmod, . ~ . - pm25_ma + cbpm2)
+
+# OBTAIN THE PREDICTIONS FOR A 10-UNIT INCREASE IN PM2.5
+cppm1 <- crosspred(cbpm1, dlnmmod1, cen=0, at=pminc, bylag=0.1)
+cppm2 <- crosspred(cbpm2, dlnmmod2, cen=0, at=pminc)
+
+# EXTRAC THE ESTIMATES AND 95%CI FOR THE OVERALL CUMULATIVE HR
+cppm1$allRRfit ; cppm1$allRRlow ; cppm1$allRRhigh
+cppm2$allRRfit ; cppm2$allRRlow ; cppm2$allRRhigh

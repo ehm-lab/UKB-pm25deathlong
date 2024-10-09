@@ -29,9 +29,7 @@ senslist1 <- lapply(ind, function(i) {
   cat("\n", "indout=", indout, " indconf=", indconf, " lag=", lag, 
     " indarglag=", indarglag, "\n", sep="")
   
-  ################################################
   # SELECT THE OUTCOME (SPECIFIC DEATH CAUSE)
-  ################################################
   icd <- icdcode[[indout]]
   len <- icdlen[indout]
   outdata <- outdeath[substr(icd10,1,len) %in% icd]
