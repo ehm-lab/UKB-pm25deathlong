@@ -1,14 +1,23 @@
 ################################################################################
-# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+# Original R code for the analysis in:
+#
+# Vanoli J, et al. Long-term associations between time-varying exposure to 
+#   ambient PM2.5 and mortality: an analysis of the UK Biobank. Epidemiology. 
+#   2024;36(1):1-10. DOI: 10.1097/EDE.0000000000001796
+# http://www.ag-myresearch.com/2024_vanoli_epidemiol.html
+#
+# * an updated version of this code, compatible with future versions of the
+#   software, is available at:
+#   https://github.com/gasparrini/UKB-pm25deathlong
 ################################################################################
 
 ################################################################################
-# SENSITIVITY ANALYSIS ABOUT COVID (RESTRICT TO PERIOD PRE-2020)
+# SENSITIVITY ANALYSIS ABOUT WASHOUT PERIOD (RESTRICT TO PERIOD POST-2013)
 ################################################################################
 
 # LOOP ACROSS MODELS (ONLY MAIN)
 ind <- which(modcomb$indconf==6 & modcomb$lag==7 & modcomb$indarglag==1)
-senslist3 <- lapply(ind, function(i) {
+senslist4 <- lapply(ind, function(i) {
   
   # EXTRACT PARAMETERS
   indout <- modcomb[i,1]
@@ -19,7 +28,7 @@ senslist3 <- lapply(ind, function(i) {
   # PRINT
   cat("\n", "indout=", indout, " indconf=", indconf, " lag=", lag, 
     " indarglag=", indarglag, "\n", sep="")
-  
+
   # SELECT THE OUTCOME (SPECIFIC DEATH CAUSE)
   icd <- icdcode[[indout]]
   len <- icdlen[indout]
@@ -28,7 +37,7 @@ senslist3 <- lapply(ind, function(i) {
   
   # MERGE WITH MAIN DATA
   data <- merge(maindata, outdata[, c("eid","devent")], all.x=T)
-  
+
   # DEFINE THE EVENT AND EXIT TIME
   data[, event:=(!is.na(devent) & devent<=dendfu) + 0]
   data[, dexit:=fifelse(event==1, devent, dendfu)]
@@ -73,7 +82,7 @@ senslist3 <- lapply(ind, function(i) {
       merge(bdbasevarmi[[j]], by="eid") |> setkey(eid, year)
     
     # FIT THE MODEL
-    mod <- coxph(fmod, data=datami, ties="efron", subset=year<2020)
+    mod <- coxph(fmod, data=datami, ties="efron", subset=year>2013)
     
     # EXTRACT COEF/VCOV
     ind <- grep("pm25_ma", names(coef(mod)))
@@ -98,7 +107,7 @@ senslist3 <- lapply(ind, function(i) {
 })
 
 # RENAME
-names(senslist3) <- outseq
+names(senslist4) <- outseq
 
 # SAVE
-saveRDS(senslist3, file="temp/senslist3.RDS")
+saveRDS(senslist4, file="temp/senslist4.RDS")

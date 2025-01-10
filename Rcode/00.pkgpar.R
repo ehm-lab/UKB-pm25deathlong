@@ -1,5 +1,14 @@
 ################################################################################
-# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+# R code for reproducing the analysis in:
+#
+# Vanoli J, et al. Long-term associations between time-varying exposure to 
+#   ambient PM2.5 and mortality: an analysis of the UK Biobank. Epidemiology. 
+#   2024;36(1):1-10. DOI: 10.1097/EDE.0000000000001796
+# http://www.ag-myresearch.com/2024_vanoli_epidemiol.html
+#
+# * an updated version of this code, compatible with future versions of the
+#   software, is available at:
+#   https://github.com/gasparrini/UKB-pm25deathlong
 ################################################################################
 
 ################################################################################
@@ -7,13 +16,15 @@
 ################################################################################
 
 # LOAD THE PACKAGES
+library(zen4R)
 library(data.table) ; library(dplyr)
 library(survival) ; library(Epi)
 library(dlnm) ; library(splines)
 library(ggplot2)
 
 # CREATE FOLDERS (IF NEEDED)
-if(!"output" %in% list.files()) dir.create("output")
+for(fold in c("output","temp","data"))
+  if(!fold %in% list.files()) dir.create(fold)
 
 # SELECT MORTALITY OUTCOMES
 outseq <- c("all","nonacc","cvd","resp","lung")

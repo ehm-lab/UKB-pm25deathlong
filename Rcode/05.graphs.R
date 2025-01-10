@@ -1,5 +1,14 @@
 ################################################################################
-# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+# R code for reproducing the analysis in:
+#
+# Vanoli J, et al. Long-term associations between time-varying exposure to 
+#   ambient PM2.5 and mortality: an analysis of the UK Biobank. Epidemiology. 
+#   2024;36(1):1-10. DOI: 10.1097/EDE.0000000000001796
+# http://www.ag-myresearch.com/2024_vanoli_epidemiol.html
+#
+# * an updated version of this code, compatible with future versions of the
+#   software, is available at:
+#   https://github.com/gasparrini/UKB-pm25deathlong
 ################################################################################
 
 ################################################################################
@@ -28,7 +37,7 @@ pmplot <- pmdata |>
   theme_bw() 
 
 # PRINT
-png("output/trendpm.png", height=350*6, width=700*6, res=72*6)
+png("output/pmtrend.png", height=350*6, width=700*6, res=72*6)
 pmplot
 dev.off()
 
@@ -43,7 +52,7 @@ merge(maindata, outdeath) |>
   theme(panel.grid.major.x = element_blank())
 
 # PRINT
-dev.print(png, "output/deathbyyear.png", height=500*4, width=500*7, res=72*6)
+dev.print(png, "output/deathyear.png", height=500*4, width=500*7, res=72*6)
 
 ################################################################################
 # PLOT OF LAG-RESPONSE RELATIONSHIPS FROM DLM
@@ -62,7 +71,7 @@ plot(cppm1, var=pminc, ylab=ylab, main="Lag-response", xlab="Lag (years)")
 points(cppm2, var=pminc, pch=19, col=2, ci="b")
 
 # PRINT
-dev.print(pdf, "output/lagresponse.pdf", height=6, width=8)
+dev.print(pdf, "output/lagresp.pdf", height=6, width=8)
 
 # RESET GRAPHICAL PARAMETERS
 par(oldpar)

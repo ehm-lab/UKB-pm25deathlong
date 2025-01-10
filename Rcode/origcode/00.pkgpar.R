@@ -1,5 +1,14 @@
 ################################################################################
-# ANALYSIS OF LONG-TERM EXPOSURE TO PM2.5 AND MORTALITY IN THE UKB COHORT
+# Original R code for the analysis in:
+#
+# Vanoli J, et al. Long-term associations between time-varying exposure to 
+#   ambient PM2.5 and mortality: an analysis of the UK Biobank. Epidemiology. 
+#   2024;36(1):1-10. DOI: 10.1097/EDE.0000000000001796
+# http://www.ag-myresearch.com/2024_vanoli_epidemiol.html
+#
+# * an updated version of this code, compatible with future versions of the
+#   software, is available at:
+#   https://github.com/gasparrini/UKB-pm25deathlong
 ################################################################################
 
 ################################################################################
@@ -16,11 +25,8 @@ library(ggplot2) ; library(patchwork) ; library(scales)
 
 # DIRECTORIES
 maindir <- "V:/VolumeQ/AGteam/UKBiobank/data/processed/ukb671152/"
-#maindir <- "C:/Users/anton/Desktop/data/processed/ukb671152/"
 pmdir <- "V:/VolumeQ/AGteam/UKBiobank/data/original/envdata/ver2021/"
-#pmdir <- "C:/Users/anton/Desktop/data/"
 fundir <- "V:/VolumeQ/AGteam/UKBiobank/scripts/functions/"
-#fundir <- "C:/Users/anton/Desktop/scripts/functions/"
 
 # CREATE FOLDERS (IF NEEDED)
 if(!"temp" %in% list.files()) dir.create("temp")
