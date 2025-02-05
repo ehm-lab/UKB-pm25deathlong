@@ -6,7 +6,7 @@ An example of survival analysis of long-term risks of air pollution on mortality
 
 This repository stores the updated R code to reproduce the analysis presented in the article:
 
-Vanoli J, et al. Long-term associations between time-varying exposure to ambient PM$_{2.5}$ and mortality: an analysis of the UK Biobank. *Epidemiology*. 2025;36(1):1-10. DOI: 10.1097/EDE.0000000000001796 [[freely available here](http://www.ag-myresearch.com/2025_vanoli_epidemiol.html)]
+Vanoli J, et al. Long-term associations between time-varying exposure to ambient PM2.5 and mortality: an analysis of the UK Biobank. *Epidemiology*. 2025;36(1):1-10. DOI: 10.1097/EDE.0000000000001796 [[freely available here](http://www.ag-myresearch.com/2025_vanoli_epidemiol.html)]
 
 The repo provides a series of R scripts that can be used to replicate the analysis described in the article (see section R scripts below). The main scripts included in the main folder *Rcode* can be used as a tutorial, and the user can run them to perform a simplified analysis illustrating the key steps using synthetic data. Additional scripts included in sub-folders are added to allow the complete replication of the study, although they require access to the UKB database (see section Data below).
 
@@ -29,7 +29,7 @@ The series of synthetic datasets are the following:
 
 -   `synthbdcohortinfo`: basic cohort information regarding the follow-up period and birth/death dates for 502,360 participants.
 -   `synthbdbasevar`: baseline variables, mostly collected at recruitment.
--   `synthpmdata`: annual average exposure to PM$_{2.5}$ for each participant reconstructed using their residential history.
+-   `synthpmdata`: annual average exposure to PM2.5 for each participant reconstructed using their residential history.
 -   `synthoutdeath`: death records that occurred during the follow-up with date and ICD-10 code.
 
 **Note**: the synthetic versions of the datasets resemble the real ones in several aspects, including the distribution and cross-correlation of variables as well as some of the effect associations. These can be used to replicate the analysis using the scripts provided in this repo, as well as for illustrative purposes in other tutorials. However, users are warned that **these datasets are fake** and must not be used for making inferences and addressing research hypotheses.
