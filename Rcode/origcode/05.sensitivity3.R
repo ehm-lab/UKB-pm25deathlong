@@ -4,7 +4,7 @@
 # Vanoli J, et al. Long-term associations between time-varying exposure to 
 #   ambient PM2.5 and mortality: an analysis of the UK Biobank. Epidemiology. 
 #   2024;36(1):1-10. DOI: 10.1097/EDE.0000000000001796
-# http://www.ag-myresearch.com/2024_vanoli_epidemiol.html
+# http://www.ag-myresearch.com/2025_vanoli_epidemiol.html
 #
 # * an updated version of this code, compatible with future versions of the
 #   software, is available at:
