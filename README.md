@@ -1,4 +1,4 @@
-# Long-term exposure to PM2.5 and mortality: an analysis of the UK Biobank
+# An analysis of long-term mortality risks of air pollution in the UK Biobank
 
 An example of survival analysis of long-term risks of air pollution on mortality using a large population-based cohort and time-varying exposure histories
 
